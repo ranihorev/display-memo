@@ -72,9 +72,7 @@ struct StorageFile: Codable {
 enum RestoreResult {
     case success
     case noDefaultArrangement
-    case signatureMismatch
     case customOverrideActive
-    case displayCountMismatch(saved: Int, current: Int)
     case mappingFailed
     case mirroringDetected
     case configurationFailed(Error)
@@ -91,12 +89,8 @@ enum RestoreResult {
             return "Layout restored"
         case .noDefaultArrangement:
             return "No default arrangement saved"
-        case .signatureMismatch:
-            return "Default arrangement is for different displays"
         case .customOverrideActive:
             return "Custom arrangement active (manual changes detected)"
-        case .displayCountMismatch(let saved, let current):
-            return "Display count differs: saved \(saved), connected \(current)"
         case .mappingFailed:
             return "Unable to map displays for this setup"
         case .mirroringDetected:

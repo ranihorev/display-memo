@@ -20,11 +20,6 @@ final class ProfileStore {
         appSupportDirectory.appendingPathComponent("storage.json")
     }
 
-    /// Temporary file for atomic writes
-    private var tempStorageURL: URL {
-        appSupportDirectory.appendingPathComponent("storage.json.tmp")
-    }
-
     private init() {
         storage = StorageFile()
         ensureDirectoryExists()
@@ -124,17 +119,8 @@ final class ProfileStore {
             encoder.dateEncodingStrategy = .iso8601
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             let data = try encoder.encode(storage)
-
-            // Write to temp file first
-            try data.write(to: tempStorageURL, options: .atomic)
-
-            // Rename to final location (atomic on POSIX)
-            if fileManager.fileExists(atPath: storageURL.path) {
-                try fileManager.removeItem(at: storageURL)
-            }
-            try fileManager.moveItem(at: tempStorageURL, to: storageURL)
-
-            logger.debug("Storage persisted successfully")
+            try data.write(to: storageURL, options: .atomic)
+            logger.debug("Storage persisted")
         } catch {
             logger.error("Failed to persist storage: \(error.localizedDescription)")
         }

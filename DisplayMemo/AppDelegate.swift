@@ -1,7 +1,7 @@
 import Cocoa
 import os.log
 
-class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
+class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var statusItem: NSStatusItem!
     private let logger = Logger(subsystem: "com.displaymemo.app", category: "App")
@@ -17,43 +17,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     // MARK: - App Lifecycle
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        logger.info("DisplayMemo launching")
-
-        // Ensure the app is properly activated (needed without a main nib)
         NSApp.setActivationPolicy(.accessory)
-
         setupStatusItem()
         setupMenu()
-
         DisplayManager.shared.delegate = self
         DisplayManager.shared.startObserving()
-
         updateMenuState()
-
         logger.info("DisplayMemo ready")
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         DisplayManager.shared.stopObserving()
-        logger.info("DisplayMemo terminating")
     }
 
     // MARK: - Status Item Setup
 
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-
         if let button = statusItem.button {
             if let image = NSImage(systemSymbolName: "display.2", accessibilityDescription: "DisplayMemo") {
                 button.image = image
-                logger.info("Status item created with SF Symbol")
             } else {
-                // Fallback to text if SF Symbol not available
                 button.title = "DM"
-                logger.warning("SF Symbol not available, using text fallback")
             }
-        } else {
-            logger.error("Failed to get status item button")
         }
     }
 
@@ -167,62 +153,40 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     // MARK: - Actions
 
     @objc private func saveDefaultAction() {
-        logger.info("Save default action triggered")
-
         let result = DisplayManager.shared.snapshot()
-
         switch result {
         case .success(let profile):
             ProfileStore.shared.saveDefaultArrangement(profile)
             DisplayManager.shared.clearTrackedPositions()
             updateMenuState()
             showAlert(title: "DisplayMemo", message: "Default arrangement saved for \(profile.displayName)")
-
         case .noDisplays, .noMainDisplay, .multipleMainDisplays:
             showAlert(title: "Save Failed", message: result.message)
         }
     }
 
     @objc private func applyDefaultAction() {
-        logger.info("Apply default action triggered")
-
-        let signature = DisplayManager.shared.currentSignature
-
-        // Clear custom override first so restore will work
-        ProfileStore.shared.clearCustomOverride(for: signature)
-
+        ProfileStore.shared.clearCustomOverride(for: DisplayManager.shared.currentSignature)
         let result = DisplayManager.shared.restoreDefault()
-
-        if result.isSuccess {
-            updateMenuState()
-        } else {
+        updateMenuState()
+        if !result.isSuccess {
             showAlert(title: "Apply Failed", message: result.message)
-            updateMenuState()
         }
     }
 
     @objc private func clearCustomAction() {
-        logger.info("Clear custom action triggered")
-
-        let signature = DisplayManager.shared.currentSignature
-        ProfileStore.shared.clearCustomOverride(for: signature)
+        ProfileStore.shared.clearCustomOverride(for: DisplayManager.shared.currentSignature)
         DisplayManager.shared.clearTrackedPositions()
         updateMenuState()
-
-        // Optionally auto-apply default after clearing custom
         DisplayManager.shared.attemptAutoRestore()
     }
 
     @objc private func clearDefaultAction() {
-        logger.info("Clear default action triggered")
-
-        guard let defaultArrangement = ProfileStore.shared.defaultArrangement else {
-            return
-        }
+        guard let defaultArrangement = ProfileStore.shared.defaultArrangement else { return }
 
         let alert = NSAlert()
         alert.messageText = "Clear Default Arrangement?"
-        alert.informativeText = "Are you sure you want to clear the default arrangement for \"\(defaultArrangement.displayName)\"?"
+        alert.informativeText = "Clear the default arrangement for \"\(defaultArrangement.displayName)\"?"
         alert.addButton(withTitle: "Clear")
         alert.addButton(withTitle: "Cancel")
         alert.alertStyle = .warning
@@ -231,7 +195,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             ProfileStore.shared.clearDefaultArrangement()
             DisplayManager.shared.clearTrackedPositions()
             updateMenuState()
-            logger.info("Default arrangement cleared")
         }
     }
 
@@ -241,26 +204,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     @objc private func quitAction() {
-        logger.info("Quit action triggered")
         NSApplication.shared.terminate(nil)
-    }
-
-    // MARK: - Menu Validation
-
-    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
-        let hasDefault = ProfileStore.shared.hasDefaultArrangement
-
-        if menuItem == applyDefaultMenuItem {
-            return hasDefault
-        }
-        if menuItem == clearDefaultMenuItem {
-            return hasDefault
-        }
-        if menuItem == clearCustomMenuItem {
-            let signature = DisplayManager.shared.currentSignature
-            return ProfileStore.shared.hasCustomOverride(for: signature)
-        }
-        return true
     }
 
     // MARK: - Helpers
@@ -279,20 +223,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
 extension AppDelegate: DisplayManagerDelegate {
     func displayManagerDidDetectConfigurationChange(_ manager: DisplayManager) {
-        logger.info("Configuration change detected")
         updateMenuState()
-
-        // Attempt auto-restore
         manager.attemptAutoRestore()
     }
 
     func displayManager(_ manager: DisplayManager, didAutoRestore result: RestoreResult) {
-        logger.info("Auto-restore result: \(result.message)")
         updateMenuState()
     }
 
     func displayManagerDidDetectManualChange(_ manager: DisplayManager) {
-        logger.info("Manual change detected, custom override now active")
         updateMenuState()
     }
 }
