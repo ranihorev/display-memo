@@ -47,10 +47,18 @@ jobs:
           ZIP_NAME="DisplayMemo-macos-${TAG}.zip"
           
           # Use ditto to preserve macOS bundle attributes
-          ditto -c -k --keepParent dist/DisplayMemo.app "${ZIP_NAME}"
+          if ! ditto -c -k --keepParent dist/DisplayMemo.app "${ZIP_NAME}"; then
+            echo "Error: Failed to package DisplayMemo.app"
+            exit 1
+          fi
+          
+          if [ ! -f "${ZIP_NAME}" ]; then
+            echo "Error: ${ZIP_NAME} was not created"
+            exit 1
+          fi
           
           echo "zip_name=${ZIP_NAME}" >> $GITHUB_OUTPUT
-          echo "Created ${ZIP_NAME}"
+          echo "Successfully created ${ZIP_NAME}"
       
       - name: Create or update draft release
         uses: softprops/action-gh-release@v1
