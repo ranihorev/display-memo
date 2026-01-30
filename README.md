@@ -14,7 +14,11 @@ When you connect an external monitor, macOS doesn't know where you want it posit
 2. Drag displays to the right positions
 3. Set which one is "Main" (menu bar and dock)
 
-This gets old fast if you connect/disconnect monitors regularly.
+This gets old fast if you switch monitors regularly.
+
+<p>
+<img width="400" height="auto" alt="image" src="https://github.com/user-attachments/assets/69a41a1d-1eff-451a-9103-a68eb779e0a9" />
+</p>
 
 ## Solution
 
