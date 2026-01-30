@@ -14,7 +14,11 @@ When you connect an external monitor, macOS doesn't know where you want it posit
 2. Drag displays to the right positions
 3. Set which one is "Main" (menu bar and dock)
 
-This gets old fast if you connect/disconnect monitors regularly.
+This gets old fast if you switch monitors regularly.
+
+<p>
+<img width="400" height="auto" alt="image" src="https://github.com/user-attachments/assets/69a41a1d-1eff-451a-9103-a68eb779e0a9" />
+</p>
 
 ## Solution
 
@@ -23,6 +27,10 @@ DisplayMemo saves your preferred arrangement once and automatically restores it 
 1. Arrange your displays how you like them in System Settings
 2. Click **Save as Default Arrangement** in DisplayMemo
 3. Done — next time you connect, it just works
+
+<p>
+  <img width="400" height="auto" alt="image" src="https://github.com/user-attachments/assets/a721dcb1-b4a1-4c50-98e1-5499bf7f7a16" />
+</p>
 
 ## Features
 
