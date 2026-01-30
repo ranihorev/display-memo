@@ -46,9 +46,11 @@ DisplayMemo saves your preferred arrangement once and automatically restores it 
 
 1. Download the latest `.zip` from [Releases](../../releases)
 2. Unzip and drag `DisplayMemo.app` to your Applications folder
-3. **First launch:** Right-click the app → select "Open" → click "Open" in the dialog
+3. Double-click to open — macOS will show a warning
+4. Open **System Settings → Privacy & Security**, scroll down to Security
+5. Click **Open Anyway**, then enter your password
 
-> **Note:** Since the app isn't signed with an Apple Developer certificate, macOS will show a warning on first launch. The right-click method bypasses this. You only need to do this once.
+You only need to do this once.
 
 ### Building from Source
 
