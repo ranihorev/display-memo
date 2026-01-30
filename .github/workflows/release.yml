@@ -3,7 +3,7 @@ name: Build and Release macOS App
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 permissions:
@@ -11,18 +11,23 @@ permissions:
 
 jobs:
   build-and-release:
-    runs-on: macos-latest
-    
+    runs-on: macos-14
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
       - name: Ensure build.sh is executable
         run: chmod +x build.sh
-      
+
       - name: Build app
         run: ./build.sh
-      
+
       - name: Verify build output
         run: |
           if [ ! -d "dist/DisplayMemo.app" ]; then
@@ -30,7 +35,7 @@ jobs:
             exit 1
           fi
           echo "Build output verified: dist/DisplayMemo.app exists"
-      
+
       - name: Get tag name
         id: get_tag
         run: |
@@ -39,27 +44,33 @@ jobs:
           else
             echo "tag=manual-build-$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: Package app
         id: package
         run: |
           TAG="${{ steps.get_tag.outputs.tag }}"
           ZIP_NAME="DisplayMemo-macos-${TAG}.zip"
-          
+
           # Use ditto to preserve macOS bundle attributes
           if ! ditto -c -k --keepParent dist/DisplayMemo.app "${ZIP_NAME}"; then
             echo "Error: Failed to package DisplayMemo.app"
             exit 1
           fi
-          
+
           if [ ! -f "${ZIP_NAME}" ]; then
             echo "Error: ${ZIP_NAME} was not created"
             exit 1
           fi
-          
+
           echo "zip_name=${ZIP_NAME}" >> $GITHUB_OUTPUT
           echo "Successfully created ${ZIP_NAME}"
-      
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DisplayMemo
+          path: ${{ steps.package.outputs.zip_name }}
+
       - name: Create or update draft release
         uses: softprops/action-gh-release@v1
         if: github.ref_type == 'tag'
