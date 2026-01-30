@@ -4,13 +4,13 @@ A macOS menu-bar utility that remembers your display arrangement so you don't ha
 
 ## Problem
 
-Every time you connect an external monitor, macOS forgets how you had your displays arranged:
+When you connect an external monitor, macOS doesn't know where you want it positioned. It just picks a default. So every time you plug in, you have to:
 
-- Which display is on the left vs right
-- Which display is above or below
-- Which display is "Main" (has the menu bar and dock)
+1. Open **System Settings → Displays → Arrange**
+2. Drag displays to the right positions
+3. Set which one is "Main" (menu bar and dock)
 
-You end up going to **System Settings → Displays → Arrange** over and over again.
+This gets old fast if you connect/disconnect monitors regularly.
 
 ## Solution
 
