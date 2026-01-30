@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="icon.png" width="128" height="128" alt="DisplayMemo icon">
+</p>
+
 # DisplayMemo
 
 A macOS menu-bar utility that remembers your display arrangement so you don't have to reconfigure it every time.
