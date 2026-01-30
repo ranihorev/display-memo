@@ -24,6 +24,10 @@ DisplayMemo saves your preferred arrangement once and automatically restores it 
 2. Click **Save as Default Arrangement** in DisplayMemo
 3. Done — next time you connect, it just works
 
+<p>
+  <img width="400" height="auto" alt="image" src="https://github.com/user-attachments/assets/a721dcb1-b4a1-4c50-98e1-5499bf7f7a16" />
+</p>
+
 ## Features
 
 - **Menu-bar only** — Lives in your menu bar, no dock icon
