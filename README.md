@@ -1,94 +1,75 @@
 # DisplayMemo
 
-A macOS menu-bar utility that automatically restores display arrangements when the same combination of monitors is reconnected.
+A macOS menu-bar utility that remembers your display arrangement so you don't have to reconfigure it every time.
 
 ## Problem
 
-macOS sometimes forgets:
-- Physical display positions (left/right/above/below)
-- Which display is the "Main Display" (white menu bar)
+Every time you connect an external monitor, macOS forgets how you had your displays arranged:
 
-This is especially common when reconnecting through docks or hubs.
+- Which display is on the left vs right
+- Which display is above or below
+- Which display is "Main" (has the menu bar and dock)
+
+You end up going to **System Settings → Displays → Arrange** over and over again.
 
 ## Solution
 
-1. Connect your monitors
-2. Arrange them in **System Settings → Displays**
-3. Click **Save Current Arrangement for This Setup** in DisplayMemo
-4. Later, when the same monitors are detected, DisplayMemo restores the saved arrangement automatically
+DisplayMemo saves your preferred arrangement once and automatically restores it whenever you connect monitors.
+
+1. Arrange your displays how you like them in System Settings
+2. Click **Save as Default Arrangement** in DisplayMemo
+3. Done — next time you connect, it just works
 
 ## Features
 
-- **Menu-bar only** - No dock icon, no main window
-- **Automatic restore** - Detects when monitors reconnect and restores layout
-- **Manual restore** - One-click restore from the menu
-- **Smart display matching** - Identifies displays by vendor/model ID
-- **Handles identical monitors** - Uses proximity-based matching for duplicate displays
-- **Launch at login** - Optional auto-start on macOS 13+
-- **Resilient** - Debounce and stability checks handle dock connection event storms
+- **Menu-bar only** — Lives in your menu bar, no dock icon
+- **Automatic restore** — Applies your saved layout when displays connect
+- **Manual restore** — One-click restore if needed
+- **Detects manual changes** — If you rearrange displays yourself, it won't fight you
+- **Launch at login** — Start automatically with your Mac
 
-## Requirements
+## Installation
 
-- macOS 13.0 or later
-- Xcode (for building)
-
-## Building
+### Building from Source
 
 ```bash
 ./build.sh
 ```
 
-The built app will be at `dist/DisplayMemo.app`.
-
-### Manual Build
-
-```bash
-xcodebuild -scheme DisplayMemo \
-  -configuration Release \
-  -derivedDataPath .build \
-  build
-```
-
-## Installation
-
-1. Build the app using the instructions above
-2. Copy `dist/DisplayMemo.app` to your Applications folder
-3. Launch DisplayMemo
-4. (Optional) Enable "Launch at Login" from the menu
+Copy `dist/DisplayMemo.app` to your Applications folder.
 
 ## Usage
 
-### Menu Options
+Click the display icon in your menu bar:
 
-- **Status row** - Shows "Active: \<Profile Name\>" or "Unknown Configuration"
-- **Save Current Arrangement for This Setup** - Saves the current display layout
-- **Restore Saved Arrangement Now** - Manually restores the saved layout
-- **Auto-Restore on Connection** - Toggle automatic restoration (default: On)
-- **Delete Saved Profile for This Setup** - Removes the saved profile
-- **Launch at Login** - Toggle auto-start
-- **Quit DisplayMemo** - Exit the application
+| Menu Item | Description |
+|-----------|-------------|
+| **Save as Default Arrangement** | Saves current display positions |
+| **Apply Default Arrangement** | Manually restore saved layout |
+| **Clear Custom Arrangement** | Stop ignoring auto-restore (appears after manual changes) |
+| **Clear Default Arrangement** | Delete saved layout |
+| **Launch at Login** | Auto-start with macOS |
 
-### How It Works
+## How It Works
 
-1. DisplayMemo observes display configuration changes
-2. When monitors are connected, it computes a "signature" based on vendor/model IDs
-3. If a saved profile matches the signature, it restores the arrangement
-4. Display origins are normalized relative to the main display for consistent restoration
+1. When you save, DisplayMemo records each display's position and resolution
+2. When displays connect, it waits for the connection to stabilize (2 second debounce)
+3. It matches saved displays to connected displays by resolution
+4. It applies the saved positions using macOS display configuration APIs
 
-## Technical Details
+If you manually rearrange displays after a restore, DisplayMemo notices and stops auto-restoring until you clear the custom arrangement or save a new default.
 
-- **Display Identity**: Displays are identified by VendorID + ModelID only (no serial numbers)
-- **Profile Storage**: `~/Library/Application Support/DisplayMemo/profiles.json`
-- **Atomic Writes**: Profiles are written atomically to prevent corruption
-- **Event Handling**: 2-second debounce with stability gate prevents multiple restore attempts
+## Requirements
 
-## Limitations (V1)
+- macOS 13.0+
+- Xcode (for building)
 
-- No resolution/refresh rate enforcement
-- No rotation enforcement
-- No mirroring configuration support
-- One profile per display configuration
+## Limitations
+
+- Saves one arrangement (not multiple profiles)
+- Doesn't enforce resolution or refresh rate
+- Doesn't handle mirrored displays
 
 ## License
 
-MIT License
+MIT
