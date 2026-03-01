@@ -9,15 +9,30 @@ fi
 
 echo "Building DisplayMemo..."
 
-xcodebuild -scheme DisplayMemo \
-  -configuration Release \
-  -derivedDataPath .build \
-  -arch arm64 -arch x86_64 \
-  ONLY_ACTIVE_ARCH=NO \
-  CODE_SIGN_IDENTITY="-" \
-  CODE_SIGNING_REQUIRED=NO \
-  CODE_SIGNING_ALLOWED=NO \
-  build
+# If CODESIGN_IDENTITY is set, build with signing; otherwise build unsigned (local dev)
+if [ -n "$CODESIGN_IDENTITY" ]; then
+  echo "Building with code signing identity: $CODESIGN_IDENTITY"
+  xcodebuild -scheme DisplayMemo \
+    -configuration Release \
+    -derivedDataPath .build \
+    -arch arm64 -arch x86_64 \
+    ONLY_ACTIVE_ARCH=NO \
+    CODE_SIGN_IDENTITY="$CODESIGN_IDENTITY" \
+    CODE_SIGN_STYLE=Manual \
+    DEVELOPMENT_TEAM="${APPLE_TEAM_ID:-}" \
+    build
+else
+  echo "Building without code signing (local dev)"
+  xcodebuild -scheme DisplayMemo \
+    -configuration Release \
+    -derivedDataPath .build \
+    -arch arm64 -arch x86_64 \
+    ONLY_ACTIVE_ARCH=NO \
+    CODE_SIGN_IDENTITY="-" \
+    CODE_SIGNING_REQUIRED=NO \
+    CODE_SIGNING_ALLOWED=NO \
+    build
+fi
 
 mkdir -p dist
 rm -rf dist/DisplayMemo.app

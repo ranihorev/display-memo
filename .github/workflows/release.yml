@@ -22,19 +22,48 @@ jobs:
         with:
           xcode-version: latest-stable
 
+      - name: Install signing certificate
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          # Create a temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          CERT_PATH=$RUNNER_TEMP/certificate.p12
+          echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > "$CERT_PATH"
+          security import "$CERT_PATH" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k "$KEYCHAIN_PATH"
+
+          # Allow codesign to access the keychain
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
+
       - name: Ensure build.sh is executable
         run: chmod +x build.sh
 
-      - name: Build app
+      - name: Build and sign app
+        env:
+          CODESIGN_IDENTITY: "Developer ID Application"
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: ./build.sh
 
-      - name: Verify build output
+      - name: Verify code signature
         run: |
-          if [ ! -d "dist/DisplayMemo.app" ]; then
-            echo "Error: dist/DisplayMemo.app not found!"
-            exit 1
-          fi
-          echo "Build output verified: dist/DisplayMemo.app exists"
+          echo "=== Verifying code signature ==="
+          codesign --verify --deep --strict dist/DisplayMemo.app
+          codesign -dv --verbose=4 dist/DisplayMemo.app
+          echo "Code signature verified successfully"
 
       - name: Get tag name
         id: get_tag
@@ -45,25 +74,49 @@ jobs:
             echo "tag=manual-build-$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
           fi
 
-      - name: Package app
+      - name: Package app for notarization
         id: package
         run: |
           TAG="${{ steps.get_tag.outputs.tag }}"
           ZIP_NAME="DisplayMemo-macos-${TAG}.zip"
 
           # Use ditto to preserve macOS bundle attributes
-          if ! ditto -c -k --keepParent dist/DisplayMemo.app "${ZIP_NAME}"; then
-            echo "Error: Failed to package DisplayMemo.app"
-            exit 1
-          fi
-
-          if [ ! -f "${ZIP_NAME}" ]; then
-            echo "Error: ${ZIP_NAME} was not created"
-            exit 1
-          fi
-
+          ditto -c -k --keepParent dist/DisplayMemo.app "${ZIP_NAME}"
           echo "zip_name=${ZIP_NAME}" >> $GITHUB_OUTPUT
           echo "Successfully created ${ZIP_NAME}"
+
+      - name: Notarize app
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          ZIP_NAME="${{ steps.package.outputs.zip_name }}"
+
+          echo "Submitting for notarization..."
+          xcrun notarytool submit "$ZIP_NAME" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+          echo "Stapling notarization ticket..."
+          xcrun stapler staple dist/DisplayMemo.app
+
+      - name: Re-package after stapling
+        run: |
+          ZIP_NAME="${{ steps.package.outputs.zip_name }}"
+          rm -f "$ZIP_NAME"
+          ditto -c -k --keepParent dist/DisplayMemo.app "$ZIP_NAME"
+          echo "Re-packaged with stapled ticket: $ZIP_NAME"
+
+      - name: Clean up keychain
+        if: always()
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/signing.keychain-db
+          if [ -f "$KEYCHAIN_PATH" ]; then
+            security delete-keychain "$KEYCHAIN_PATH"
+          fi
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
