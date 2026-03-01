@@ -94,11 +94,25 @@ jobs:
           ZIP_NAME="${{ steps.package.outputs.zip_name }}"
 
           echo "Submitting for notarization..."
-          xcrun notarytool submit "$ZIP_NAME" \
+          SUBMIT_OUTPUT=$(xcrun notarytool submit "$ZIP_NAME" \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_ID_PASSWORD" \
             --team-id "$APPLE_TEAM_ID" \
-            --wait
+            --wait 2>&1) || true
+          echo "$SUBMIT_OUTPUT"
+
+          # Extract submission ID
+          SUBMISSION_ID=$(echo "$SUBMIT_OUTPUT" | grep "id:" | head -1 | awk '{print $2}')
+
+          # Check if notarization succeeded
+          if echo "$SUBMIT_OUTPUT" | grep -q "status: Invalid"; then
+            echo "=== Notarization failed. Fetching log... ==="
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_ID_PASSWORD" \
+              --team-id "$APPLE_TEAM_ID"
+            exit 1
+          fi
 
           echo "Stapling notarization ticket..."
           xcrun stapler staple dist/DisplayMemo.app
