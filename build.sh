@@ -21,6 +21,8 @@ if [ -n "$CODESIGN_IDENTITY" ]; then
     CODE_SIGN_STYLE=Manual \
     DEVELOPMENT_TEAM="${APPLE_TEAM_ID:-}" \
     ENABLE_HARDENED_RUNTIME=YES \
+    OTHER_CODE_SIGN_FLAGS=--timestamp \
+    CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
     build
 else
   echo "Building without code signing (local dev)"
